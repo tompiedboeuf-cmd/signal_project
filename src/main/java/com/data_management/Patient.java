@@ -52,6 +52,15 @@ public class Patient {
      *         range
      */
     public List<PatientRecord> getRecords(long startTime, long endTime) {
-        // TODO Implement and test this method
+        List<PatientRecord> records = this.patientRecords;
+        List<PatientRecord> filteredRecords = new ArrayList<>();
+
+        for(PatientRecord record : records){
+            long timestamp = record.getTimestamp();
+            if (timestamp >= startTime && timestamp <= endTime){
+                filteredRecords.add(record);
+            }
+        }
+        return filteredRecords;
     }
 }
