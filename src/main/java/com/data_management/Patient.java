@@ -63,4 +63,8 @@ public class Patient {
         }
         return filteredRecords;
     }
+
+    public String getPatientId() {
+       return String.valueOf(patientId);
+    }
 }
