@@ -31,15 +31,33 @@ import java.util.ArrayList;
  * configurable intervals using a thread pool, and routes their output to the
  * selected {@link OutputStrategy} (console, file, WebSocket, or TCP).
  *
- * <p>The number of patients and the output destination can be configured via
+ * <p>
+ * The number of patients and the output destination can be configured via
  * command-line arguments. Run with {@code -h} to print usage information.
  *
- * <p>Usage example:
+ * <p>
+ * Usage example:
+ * 
  * <pre>
  *   java -jar cardio_generator.jar --patient-count 100 --output file:./output
  * </pre>
  */
 public class HealthDataSimulator {
+
+    private static HealthDataSimulator instance;
+
+    /**
+     * Returns the single shared instance of HealthDataSimulator.
+     */
+    public static HealthDataSimulator getInstance() {
+        if (instance == null) {
+            instance = new HealthDataSimulator();
+        }
+        return instance;
+    }
+
+    private HealthDataSimulator() {
+    }
 
     private static int patientCount = 50; // Default number of patients
     private static ScheduledExecutorService scheduler;
@@ -47,7 +65,8 @@ public class HealthDataSimulator {
     private static final Random random = new Random();
 
     /**
-     * Application entry point. Parses command-line arguments, initialises the scheduler,
+     * Application entry point. Parses command-line arguments, initialises the
+     * scheduler,
      * creates a shuffled list of patient IDs, and starts all data-generation tasks.
      *
      * @param args command-line arguments; supported options are {@code -h},
@@ -70,14 +89,15 @@ public class HealthDataSimulator {
      * Parses the command-line arguments and configures the simulator accordingly.
      * Recognised options:
      * <ul>
-     *   <li>{@code -h} — print help and exit</li>
-     *   <li>{@code --patient-count <n>} — set the number of simulated patients</li>
-     *   <li>{@code --output <type>} — set the output strategy (console, file:dir,
-     *       websocket:port, tcp:port)</li>
+     * <li>{@code -h} — print help and exit</li>
+     * <li>{@code --patient-count <n>} — set the number of simulated patients</li>
+     * <li>{@code --output <type>} — set the output strategy (console, file:dir,
+     * websocket:port, tcp:port)</li>
      * </ul>
      *
      * @param args the raw command-line argument array passed to {@link #main}
-     * @throws IOException if the output directory for a file strategy cannot be created
+     * @throws IOException if the output directory for a file strategy cannot be
+     *                     created
      */
     private static void parseArguments(String[] args) throws IOException {
         for (int i = 0; i < args.length; i++) {
@@ -141,7 +161,8 @@ public class HealthDataSimulator {
     }
 
     /**
-     * Prints usage instructions and supported command-line options to standard output.
+     * Prints usage instructions and supported command-line options to standard
+     * output.
      */
     private static void printHelp() {
         System.out.println("Usage: java HealthDataSimulator [options]");
@@ -161,9 +182,11 @@ public class HealthDataSimulator {
     }
 
     /**
-     * Creates and returns a sequential list of patient IDs from 1 to {@code patientCount}.
+     * Creates and returns a sequential list of patient IDs from 1 to
+     * {@code patientCount}.
      *
-     * @param patientCount the number of patient IDs to generate; must be greater than 0
+     * @param patientCount the number of patient IDs to generate; must be greater
+     *                     than 0
      * @return a list of integers {@code [1, 2, ..., patientCount]}
      */
     private static List<Integer> initializePatientIds(int patientCount) {
@@ -178,13 +201,14 @@ public class HealthDataSimulator {
      * Instantiates all data generators and schedules a recurring task for each
      * patient–generator combination using the shared scheduler.
      *
-     * <p>Scheduling periods:
+     * <p>
+     * Scheduling periods:
      * <ul>
-     *   <li>ECG — every 1 second</li>
-     *   <li>Blood saturation — every 1 second</li>
-     *   <li>Blood pressure — every 1 minute</li>
-     *   <li>Blood levels — every 2 minutes</li>
-     *   <li>Alerts — every 20 seconds</li>
+     * <li>ECG — every 1 second</li>
+     * <li>Blood saturation — every 1 second</li>
+     * <li>Blood pressure — every 1 minute</li>
+     * <li>Blood levels — every 2 minutes</li>
+     * <li>Alerts — every 20 seconds</li>
      * </ul>
      *
      * @param patientIds the list of patient IDs for whom tasks should be scheduled
