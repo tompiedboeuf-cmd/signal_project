@@ -67,7 +67,7 @@ public class AlertGenerator {
 
         PatientRecord latest = ecgRecords.get(ecgRecords.size() - 1);
         if (latest.getMeasurementValue() > average * 2.0) { 
-            triggerAlert(new Alert(patient.getPatientId(), "ABNORMAL_ECG_PEAK", latest.getTimestamp()));
+            triggerAlert(new Alert(String.valueOf(patient.getPatientId()), "ECG Abnormal Peak Alert", latest.getTimestamp()));
         }
     }
 
@@ -76,22 +76,22 @@ public class AlertGenerator {
 
         for (PatientRecord record : manualAlerts) {
             if (record.getMeasurementValue() == 1.0) {
-                triggerAlert(new Alert(patient.getPatientId(), "MANUAL_TRIGGER_ALERT", record.getTimestamp()));
+                triggerAlert(new Alert(String.valueOf(patient.getPatientId()), "Manual Alert Triggered", record.getTimestamp()));
             }
         }
     }
 
     private void checkBloodPressure(Patient patient, List<PatientRecord> records) {
-        List<PatientRecord> systolic = filterByType(records, "SystolicBP");
-        List<PatientRecord> diastolic = filterByType(records, "DiastolicBP");
+        List<PatientRecord> systolic = filterByType(records, "SystolicPressure");
+        List<PatientRecord> diastolic = filterByType(records, "DiastolicPressure");
 
         // 1. Critical Thresholds
-        checkThreshold(patient, systolic, 180, 90, "CRITICAL_SYSTOLIC");
-        checkThreshold(patient, diastolic, 120, 60, "CRITICAL_DIASTOLIC");
+        checkThreshold(patient, systolic, 180, 90, "Systolic");
+        checkThreshold(patient, diastolic, 120, 60, "Diastolic");
 
         // 2. Trend Alerts (3 consecutive readings changing by > 10mmHg)
-        evaluateTrend(patient, systolic, "TREND_SYSTOLIC");
-        evaluateTrend(patient, diastolic, "TREND_DIASTOLIC");
+        evaluateTrend(patient, systolic, "Systolic");
+        evaluateTrend(patient, diastolic, "Diastolic");
     }
 
     private void checkBloodSaturation(Patient patient, List<PatientRecord> records) {
@@ -101,7 +101,7 @@ public class AlertGenerator {
             PatientRecord current = saturation.get(i);
 
             if (current.getMeasurementValue() < 92) {
-                triggerAlert(new Alert(patient.getPatientId(), "LOW_SATURATION", current.getTimestamp()));
+                triggerAlert(new Alert(String.valueOf(patient.getPatientId()), "Low Blood Saturation Alert", current.getTimestamp()));
             }
 
             for (int j = 0; j < i; j++) {
@@ -110,7 +110,7 @@ public class AlertGenerator {
                 double valDiff = previous.getMeasurementValue() - current.getMeasurementValue();
 
                 if (timeDiff <= 600000 && valDiff >= 5) { 
-                    triggerAlert(new Alert(patient.getPatientId(), "RAPID_SATURATION_DROP", current.getTimestamp()));
+                    triggerAlert(new Alert(String.valueOf(patient.getPatientId()), "Rapid Blood Saturation Drop Alert", current.getTimestamp()));
                     break; 
                 }   
             }
@@ -123,7 +123,7 @@ public class AlertGenerator {
     * is used to correlate these two metrics.
     */
     private void checkHypotensiveHypoxemia(Patient patient, List<PatientRecord> records) {
-        List<PatientRecord> systolic = filterByType(records, "SystolicBP");
+        List<PatientRecord> systolic = filterByType(records, "SystolicPressure");
         List<PatientRecord> saturation = filterByType(records, "Saturation");
 
         for (PatientRecord s : systolic) {
@@ -131,13 +131,13 @@ public class AlertGenerator {
 
                 boolean lowSat = saturation.stream().anyMatch(sat -> Math.abs(sat.getTimestamp() - s.getTimestamp()) <= 60000 && sat.getMeasurementValue() < 92);
                 if (lowSat) {
-                    triggerAlert(new Alert(patient.getPatientId(), "HYPOTENSIVE_HYPOXEMIA", s.getTimestamp()));
+                    triggerAlert(new Alert(String.valueOf(patient.getPatientId()), "Hypotensive Hypoxemia Alert", s.getTimestamp()));
                 }
             }
         }
     }
 
-    private void evaluateTrend(Patient patient, List<PatientRecord> readings, String alertType) {
+    private void evaluateTrend(Patient patient, List<PatientRecord> readings, String type) {
         for (int i = 2; i < readings.size(); i++) {
             double v1 = readings.get(i - 2).getMeasurementValue();
             double v2 = readings.get(i - 1).getMeasurementValue();
@@ -146,10 +146,12 @@ public class AlertGenerator {
             double diff1 = v2 - v1;
             double diff2 = v3 - v2;
 
-            if ((diff1 > 10 && diff2 > 10) || (diff1 < -10 && diff2 < -10)) {
-                triggerAlert(new Alert(patient.getPatientId(), alertType, readings.get(i).getTimestamp()));
+            if (diff1 > 10 && diff2 > 10) {
+                triggerAlert(new Alert(String.valueOf(patient.getPatientId()), type + " Increasing Trend", readings.get(i).getTimestamp()));
+            } else if (diff1 < -10 && diff2 < -10) {
+                triggerAlert(new Alert(String.valueOf(patient.getPatientId()), type + " Decreasing Trend", readings.get(i).getTimestamp()));
             }
-    }   
+        }   
     }
 
     /**
@@ -160,7 +162,7 @@ public class AlertGenerator {
      *
      * @param alert the alert object containing details about the alert condition
      */
-    private void triggerAlert(Alert alert) {
+    protected void triggerAlert(Alert alert) {
         this.triggeredAlerts.add(alert);
        
         System.out.println("ALERT TRIGGERED: " + alert.getCondition() + 
@@ -172,11 +174,13 @@ public class AlertGenerator {
         return records.stream().filter(r -> r.getRecordType().equals(type)).collect(Collectors.toList());
     }
 
-    private void checkThreshold(Patient patient, List<PatientRecord> readings, double max, double min, String alertType) {
+    private void checkThreshold(Patient patient, List<PatientRecord> readings, double max, double min, String type) {
         for (PatientRecord record : readings) {
             double value = record.getMeasurementValue();
-            if (value > max || value < min) {
-                triggerAlert(new Alert(patient.getPatientId(), alertType, record.getTimestamp()));
+            if (value > max) {
+                triggerAlert(new Alert(String.valueOf(patient.getPatientId()), "Critical High " + type, record.getTimestamp()));
+            } else if (value < min) {
+                triggerAlert(new Alert(String.valueOf(patient.getPatientId()), "Critical Low " + type, record.getTimestamp()));
             }
         }
     }

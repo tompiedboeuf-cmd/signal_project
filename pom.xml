@@ -47,19 +47,21 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.7</version>
+                <version>0.8.14</version>
                 <executions>
                     <execution>
                         <goals>
-                            <goal>prepare-agent</goal></goals>
-                        </execution>
-                        <execution>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
                         <id>report</id>
                         <phase>prepare-package</phase>
                         <goals>
-                            <goal>report</goal></goals>
-                        </execution>
-                 </executions>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
@@ -73,7 +75,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <mainClass>com.cardio_generator.HealthDataSimulator</mainClass>
+                    <mainClass>com.cardio_generator.Main</mainClass>
                 </configuration>
             </plugin>
         </plugins>

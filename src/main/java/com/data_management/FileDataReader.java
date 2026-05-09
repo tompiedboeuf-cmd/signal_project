@@ -33,11 +33,18 @@ public class FileDataReader implements DataReader {
     private void parseAndStore(String line, DataStorage storage) {
         // Expected Format: PatientID, Timestamp, Label, Value
         String[] parts = line.split(",");
-        int patientId = Integer.parseInt(parts[0].trim());
-        long timestamp = Long.parseLong(parts[1].trim());
-        String label = parts[2].trim();
-        double value = Double.parseDouble(parts[3].trim());
+        if (parts.length != 4) {
+            return; // Ignore invalid lines
+        }
+        try {
+            int patientId = Integer.parseInt(parts[0].trim());
+            long timestamp = Long.parseLong(parts[1].trim());
+            String label = parts[2].trim();
+            double value = Double.parseDouble(parts[3].trim());
 
-        storage.addPatientData(patientId, value, label, timestamp);
+            storage.addPatientData(patientId, value, label, timestamp);
+        } catch (NumberFormatException e) {
+            // Ignore lines with invalid number formats
+        }
     }
 }
