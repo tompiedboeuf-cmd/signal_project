@@ -18,6 +18,15 @@ public class AlertGenerator {
     private DataStorage dataStorage;
     private List<Alert> triggeredAlerts;
 
+    private final AlertFactory bloodPressureFactory = new BloodPressureAlertFactory();
+    private final AlertFactory bloodOxygenFactory = new BloodOxygenAlertFactory();
+    private final AlertFactory ecgFactory = new ECGAlertFactory();
+
+    private final AlertStrategy bloodPressureStrategy = new BloodPressureStrategy();
+    private final AlertStrategy oxygenSaturationStrategy = new OxygenSaturationStrategy();
+    private final AlertStrategy heartRateStrategy = new HeartRateStrategy();
+    private final AlertStrategy hypotensiveHypoxemiaStrategy = new HypotensiveHypoxemiaStrategy();
+
     /**
      * Constructs an {@code AlertGenerator} with a specified {@code DataStorage}.
      * The {@code DataStorage} is used to retrieve patient data that this class
@@ -52,33 +61,21 @@ public class AlertGenerator {
     }
 
     /**
-     * @assumption ECG Alert: A peak is defined as any value exceeding 2.0x (200%) 
-    * of the current sliding window average.
-    */
+     * @assumption ECG Alert: A peak is defined as any value exceeding 2.0x (200%)
+     *             of the current sliding window average.
+     */
     private void checkECG(Patient patient, List<PatientRecord> records) {
-        List<PatientRecord> ecgRecords = filterByType(records, "ECG");
-        if (ecgRecords.size() < 10) return; 
-
-        double sum = 0;
-        for (PatientRecord r : ecgRecords) {
-            sum += r.getMeasurementValue();
-        }
-        double average = sum / ecgRecords.size();
-
-        PatientRecord latest = ecgRecords.get(ecgRecords.size() - 1);
-        if (latest.getMeasurementValue() > average * 2.0) { 
-            triggerAlert(new Alert(String.valueOf(patient.getPatientId()), "ECG Abnormal Peak Alert", latest.getTimestamp()));
-        }
+        List<Alert> alerts = heartRateStrategy.checkAlert(patient, records);
+        alerts.stream()
+                .filter(a -> a.getCondition().equals("ECG Abnormal Peak Alert"))
+                .forEach(this::triggerAlert);
     }
 
     private void checkManualAlerts(Patient patient, List<PatientRecord> records) {
-        List<PatientRecord> manualAlerts = filterByType(records, "Alert");
-
-        for (PatientRecord record : manualAlerts) {
-            if (record.getMeasurementValue() == 1.0) {
-                triggerAlert(new Alert(String.valueOf(patient.getPatientId()), "Manual Alert Triggered", record.getTimestamp()));
-            }
-        }
+        List<Alert> alerts = heartRateStrategy.checkAlert(patient, records);
+        alerts.stream()
+                .filter(a -> a.getCondition().equals("Manual Alert Triggered"))
+                .forEach(this::triggerAlert);
     }
 
     private void checkBloodPressure(Patient patient, List<PatientRecord> records) {
@@ -95,46 +92,19 @@ public class AlertGenerator {
     }
 
     private void checkBloodSaturation(Patient patient, List<PatientRecord> records) {
-        List<PatientRecord> saturation = filterByType(records, "Saturation");
-
-        for (int i = 0; i < saturation.size(); i++) {
-            PatientRecord current = saturation.get(i);
-
-            if (current.getMeasurementValue() < 92) {
-                triggerAlert(new Alert(String.valueOf(patient.getPatientId()), "Low Blood Saturation Alert", current.getTimestamp()));
-            }
-
-            for (int j = 0; j < i; j++) {
-                PatientRecord previous = saturation.get(j);
-                long timeDiff = current.getTimestamp() - previous.getTimestamp();
-                double valDiff = previous.getMeasurementValue() - current.getMeasurementValue();
-
-                if (timeDiff <= 600000 && valDiff >= 5) { 
-                    triggerAlert(new Alert(String.valueOf(patient.getPatientId()), "Rapid Blood Saturation Drop Alert", current.getTimestamp()));
-                    break; 
-                }   
-            }
-        }   
+        List<Alert> alerts = oxygenSaturationStrategy.checkAlert(patient, records);
+        alerts.forEach(this::triggerAlert);
     }
 
     /**
-    * @assumption Hypotensive Hypoxemia: Because sensors for Blood Pressure and 
-    * Oxygen Saturation may not sync perfectly, a 1-minute (60,000ms) time window 
-    * is used to correlate these two metrics.
-    */
+     * @assumption Hypotensive Hypoxemia: Because sensors for Blood Pressure and
+     *             Oxygen Saturation may not sync perfectly, a 1-minute (60,000ms)
+     *             time window
+     *             is used to correlate these two metrics.
+     */
     private void checkHypotensiveHypoxemia(Patient patient, List<PatientRecord> records) {
-        List<PatientRecord> systolic = filterByType(records, "SystolicPressure");
-        List<PatientRecord> saturation = filterByType(records, "Saturation");
-
-        for (PatientRecord s : systolic) {
-            if (s.getMeasurementValue() < 90) {
-
-                boolean lowSat = saturation.stream().anyMatch(sat -> Math.abs(sat.getTimestamp() - s.getTimestamp()) <= 60000 && sat.getMeasurementValue() < 92);
-                if (lowSat) {
-                    triggerAlert(new Alert(String.valueOf(patient.getPatientId()), "Hypotensive Hypoxemia Alert", s.getTimestamp()));
-                }
-            }
-        }
+        List<Alert> alerts = hypotensiveHypoxemiaStrategy.checkAlert(patient, records);
+        alerts.forEach(this::triggerAlert);
     }
 
     private void evaluateTrend(Patient patient, List<PatientRecord> readings, String type) {
@@ -147,11 +117,17 @@ public class AlertGenerator {
             double diff2 = v3 - v2;
 
             if (diff1 > 10 && diff2 > 10) {
-                triggerAlert(new Alert(String.valueOf(patient.getPatientId()), type + " Increasing Trend", readings.get(i).getTimestamp()));
+                triggerAlert(bloodPressureFactory.createAlert(
+                        String.valueOf(patient.getPatientId()),
+                        type + " Increasing Trend",
+                        readings.get(i).getTimestamp()));
             } else if (diff1 < -10 && diff2 < -10) {
-                triggerAlert(new Alert(String.valueOf(patient.getPatientId()), type + " Decreasing Trend", readings.get(i).getTimestamp()));
+                triggerAlert(bloodPressureFactory.createAlert(
+                        String.valueOf(patient.getPatientId()),
+                        type + " Decreasing Trend",
+                        readings.get(i).getTimestamp()));
             }
-        }   
+        }
     }
 
     /**
@@ -164,10 +140,10 @@ public class AlertGenerator {
      */
     protected void triggerAlert(Alert alert) {
         this.triggeredAlerts.add(alert);
-       
-        System.out.println("ALERT TRIGGERED: " + alert.getCondition() + 
-                           " for Patient " + alert.getPatientId() + 
-                           " at " + alert.getTimestamp());
+
+        System.out.println("ALERT TRIGGERED: " + alert.getCondition() +
+                " for Patient " + alert.getPatientId() +
+                " at " + alert.getTimestamp());
     }
 
     private List<PatientRecord> filterByType(List<PatientRecord> records, String type) {
@@ -178,9 +154,15 @@ public class AlertGenerator {
         for (PatientRecord record : readings) {
             double value = record.getMeasurementValue();
             if (value > max) {
-                triggerAlert(new Alert(String.valueOf(patient.getPatientId()), "Critical High " + type, record.getTimestamp()));
+                triggerAlert(bloodPressureFactory.createAlert(
+                        String.valueOf(patient.getPatientId()),
+                        "Critical High " + type,
+                        record.getTimestamp()));
             } else if (value < min) {
-                triggerAlert(new Alert(String.valueOf(patient.getPatientId()), "Critical Low " + type, record.getTimestamp()));
+                triggerAlert(bloodPressureFactory.createAlert(
+                        String.valueOf(patient.getPatientId()),
+                        "Critical Low " + type,
+                        record.getTimestamp()));
             }
         }
     }

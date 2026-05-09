@@ -1,4 +1,4 @@
-package data_management;
+package com.data_management;
 
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
@@ -20,6 +20,7 @@ class DataStorageTest {
         assertEquals(2, records.size()); // Check if two records are retrieved
         assertEquals(100.0, records.get(0).getMeasurementValue()); // Validate first record
     }
+
     @Test
     void testAddAndRetrievePatientData() {
         DataStorage storage = new DataStorage();

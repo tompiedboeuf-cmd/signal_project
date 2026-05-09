@@ -1,6 +1,5 @@
-package data_management;
+package com.data_management;
 
-import com.data_management.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import java.io.*;
@@ -18,10 +17,9 @@ public class FileDataReaderTest {
         // Crée un fichier de test
         Path file = tempDir.resolve("output.txt");
         Files.writeString(file,
-            "1,1000,HeartRate,72.0\n" +
-            "1,2000,SystolicPressure,120.0\n" +
-            "2,1500,Saturation,95.0\n"
-        );
+                "1,1000,HeartRate,72.0\n" +
+                        "1,2000,SystolicPressure,120.0\n" +
+                        "2,1500,Saturation,95.0\n");
 
         DataStorage storage = new DataStorage();
         FileDataReader reader = new FileDataReader(tempDir.toString());
@@ -39,10 +37,9 @@ public class FileDataReaderTest {
     void testReadInvalidLinesIgnored() throws Exception {
         Path file = tempDir.resolve("output.txt");
         Files.writeString(file,
-            "INVALID_LINE\n" +
-            "1,1000,HeartRate,72.0\n" +
-            "also,bad,data\n"
-        );
+                "INVALID_LINE\n" +
+                        "1,1000,HeartRate,72.0\n" +
+                        "also,bad,data\n");
 
         DataStorage storage = new DataStorage();
         FileDataReader reader = new FileDataReader(tempDir.toString());
