@@ -1,4 +1,4 @@
-package data_management;
+package com.data_management;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -28,5 +28,5 @@ public class PatientTest {
         p.addRecord(70.0, "HeartRate", 1000L);
         List<PatientRecord> result = p.getRecords(5000L, 9000L);
         assertTrue(result.isEmpty());
-    }  
+    }
 }

@@ -16,6 +16,27 @@ public class DataStorage {
     private Map<Integer, Patient> patientMap; // Stores patient objects indexed by their unique patient ID.
     private DataReader reader;
 
+    // ── Singleton ─────────────────────────────────────────────────────────────
+    private static DataStorage instance;
+
+    /**
+     * Returns the single shared instance of DataStorage.
+     */
+    public static DataStorage getInstance() {
+        if (instance == null) {
+            instance = new DataStorage();
+        }
+        return instance;
+    }
+
+    /**
+     * Resets the singleton instance.
+     * Use ONLY in unit tests to ensure test isolation.
+     */
+    public static void resetInstance() {
+        instance = null;
+    }
+
     /**
      * Constructs a new instance of DataStorage, initializing the underlying storage
      * structure.

@@ -1,7 +1,7 @@
-package data_management;
+package com.data_management;
 
 import com.alerts.*;
-import com.data_management.*;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
@@ -39,7 +39,7 @@ public class AlertGeneratorTest {
         generator.evaluateData(p);
 
         assertTrue(triggeredAlerts.stream()
-            .anyMatch(a -> a.getCondition().contains("Increasing Trend")));
+                .anyMatch(a -> a.getCondition().contains("Increasing Trend")));
     }
 
     @Test
@@ -52,7 +52,7 @@ public class AlertGeneratorTest {
         generator.evaluateData(p);
 
         assertTrue(triggeredAlerts.stream()
-            .anyMatch(a -> a.getCondition().contains("Decreasing Trend")));
+                .anyMatch(a -> a.getCondition().contains("Decreasing Trend")));
     }
 
     @Test
@@ -65,7 +65,7 @@ public class AlertGeneratorTest {
         generator.evaluateData(p);
 
         assertFalse(triggeredAlerts.stream()
-            .anyMatch(a -> a.getCondition().contains("Increasing Trend")));
+                .anyMatch(a -> a.getCondition().contains("Increasing Trend")));
     }
 
     // ── CRITICAL THRESHOLDS ───────────────────
@@ -77,7 +77,7 @@ public class AlertGeneratorTest {
         generator.evaluateData(p);
 
         assertTrue(triggeredAlerts.stream()
-            .anyMatch(a -> a.getCondition().contains("Critical High Systolic")));
+                .anyMatch(a -> a.getCondition().contains("Critical High Systolic")));
     }
 
     @Test
@@ -87,7 +87,7 @@ public class AlertGeneratorTest {
         generator.evaluateData(p);
 
         assertTrue(triggeredAlerts.stream()
-            .anyMatch(a -> a.getCondition().contains("Critical Low Systolic")));
+                .anyMatch(a -> a.getCondition().contains("Critical Low Systolic")));
     }
 
     @Test
@@ -97,7 +97,7 @@ public class AlertGeneratorTest {
         generator.evaluateData(p);
 
         assertTrue(triggeredAlerts.stream()
-            .anyMatch(a -> a.getCondition().contains("Critical High Diastolic")));
+                .anyMatch(a -> a.getCondition().contains("Critical High Diastolic")));
     }
 
     @Test
@@ -107,7 +107,7 @@ public class AlertGeneratorTest {
         generator.evaluateData(p);
 
         assertTrue(triggeredAlerts.stream()
-            .anyMatch(a -> a.getCondition().contains("Critical Low Diastolic")));
+                .anyMatch(a -> a.getCondition().contains("Critical Low Diastolic")));
     }
 
     // ── BLOOD SATURATION ─────────────────────
@@ -119,7 +119,7 @@ public class AlertGeneratorTest {
         generator.evaluateData(p);
 
         assertTrue(triggeredAlerts.stream()
-            .anyMatch(a -> a.getCondition().equals("Low Blood Saturation Alert")));
+                .anyMatch(a -> a.getCondition().equals("Low Blood Saturation Alert")));
     }
 
     @Test
@@ -129,7 +129,7 @@ public class AlertGeneratorTest {
         generator.evaluateData(p);
 
         assertFalse(triggeredAlerts.stream()
-            .anyMatch(a -> a.getCondition().equals("Low Blood Saturation Alert")));
+                .anyMatch(a -> a.getCondition().equals("Low Blood Saturation Alert")));
     }
 
     @Test
@@ -138,12 +138,12 @@ public class AlertGeneratorTest {
         Patient p = new Patient(1);
         p.addRecord(98.0, "Saturation", now - 500000); // hors fenêtre
         p.addRecord(97.0, "Saturation", now - 300000);
-        p.addRecord(91.0, "Saturation", now - 60000);  // chute de 6%
+        p.addRecord(91.0, "Saturation", now - 60000); // chute de 6%
 
         generator.evaluateData(p);
 
         assertTrue(triggeredAlerts.stream()
-            .anyMatch(a -> a.getCondition().equals("Rapid Blood Saturation Drop Alert")));
+                .anyMatch(a -> a.getCondition().equals("Rapid Blood Saturation Drop Alert")));
     }
 
     // ── HYPOTENSIVE HYPOXEMIA ─────────────────
@@ -152,24 +152,24 @@ public class AlertGeneratorTest {
     void testHypotensiveHypoxemiaAlert() {
         Patient p = new Patient(1);
         p.addRecord(85.0, "SystolicPressure", 1000L); // < 90
-        p.addRecord(88.0, "Saturation", 1000L);        // < 92
+        p.addRecord(88.0, "Saturation", 1000L); // < 92
 
         generator.evaluateData(p);
 
         assertTrue(triggeredAlerts.stream()
-            .anyMatch(a -> a.getCondition().equals("Hypotensive Hypoxemia Alert")));
+                .anyMatch(a -> a.getCondition().equals("Hypotensive Hypoxemia Alert")));
     }
 
     @Test
     void testNoHypotensiveHypoxemiaWhenOnlyOneLow() {
         Patient p = new Patient(1);
         p.addRecord(85.0, "SystolicPressure", 1000L); // < 90
-        p.addRecord(95.0, "Saturation", 1000L);        // normal
+        p.addRecord(95.0, "Saturation", 1000L); // normal
 
         generator.evaluateData(p);
 
         assertFalse(triggeredAlerts.stream()
-            .anyMatch(a -> a.getCondition().equals("Hypotensive Hypoxemia Alert")));
+                .anyMatch(a -> a.getCondition().equals("Hypotensive Hypoxemia Alert")));
     }
 
     // ── ECG ───────────────────────────────────
@@ -187,7 +187,7 @@ public class AlertGeneratorTest {
         generator.evaluateData(p);
 
         assertTrue(triggeredAlerts.stream()
-            .anyMatch(a -> a.getCondition().equals("ECG Abnormal Peak Alert")));
+                .anyMatch(a -> a.getCondition().equals("ECG Abnormal Peak Alert")));
     }
 
     // ── MANUAL TRIGGER ────────────────────────
@@ -199,6 +199,62 @@ public class AlertGeneratorTest {
         generator.evaluateData(p);
 
         assertTrue(triggeredAlerts.stream()
-            .anyMatch(a -> a.getCondition().equals("Manual Alert Triggered")));
+                .anyMatch(a -> a.getCondition().equals("Manual Alert Triggered")));
+    }
+
+    // ── FACTORY METHOD PATTERN ────────────────
+
+    @Test
+    void testBloodPressureAlertFactoryCreatesAlert() {
+        AlertFactory factory = new BloodPressureAlertFactory();
+        Alert alert = factory.createAlert("1", "Critical High Systolic", 1000L);
+        assertNotNull(alert);
+        assertEquals("1", alert.getPatientId());
+        assertEquals("Critical High Systolic", alert.getCondition());
+        assertEquals(1000L, alert.getTimestamp());
+    }
+
+    @Test
+    void testBloodOxygenAlertFactoryCreatesAlert() {
+        AlertFactory factory = new BloodOxygenAlertFactory();
+        Alert alert = factory.createAlert("2", "Low Blood Saturation Alert", 2000L);
+        assertNotNull(alert);
+        assertEquals("Low Blood Saturation Alert", alert.getCondition());
+    }
+
+    @Test
+    void testECGAlertFactoryCreatesAlert() {
+        AlertFactory factory = new ECGAlertFactory();
+        Alert alert = factory.createAlert("3", "ECG Abnormal Peak Alert", 3000L);
+        assertNotNull(alert);
+        assertEquals("ECG Abnormal Peak Alert", alert.getCondition());
+    }
+
+    // ── DECORATOR PATTERN ─────────────────────
+
+    @Test
+    void testPriorityAlertDecoratorAddsCriticalTag() {
+        Alert base = new Alert("1", "Critical High Systolic", 1000L);
+        Alert decorated = new PriorityAlertDecorator(base, PriorityAlertDecorator.Priority.CRITICAL);
+        assertTrue(decorated.getCondition().startsWith("[CRITICAL]"));
+        assertEquals("1", decorated.getPatientId());
+        assertEquals(1000L, decorated.getTimestamp());
+    }
+
+    @Test
+    void testRepeatedAlertDecoratorShouldRepeat() {
+        Alert base = new Alert("1", "Low Blood Saturation Alert", 1000L);
+        RepeatedAlertDecorator repeated = new RepeatedAlertDecorator(base, 5000L);
+        assertTrue(repeated.shouldRepeat(7000L));
+        assertFalse(repeated.shouldRepeat(3000L));
+    }
+
+    // ── SINGLETON PATTERN ─────────────────────
+
+    @Test
+    void testDataStorageSingletonReturnsSameInstance() {
+        DataStorage instance1 = DataStorage.getInstance();
+        DataStorage instance2 = DataStorage.getInstance();
+        assertSame(instance1, instance2);
     }
 }
