@@ -30,6 +30,16 @@ public class FileDataReader implements DataReader {
             });
     }
 
+    @Override
+    public void connect(String url) throws Exception {
+        // No network connection required for file-based data reading.
+    }
+
+    @Override
+    public void disconnect() {
+        // Nothing to close for file-based data reader.
+    }
+
     private void parseAndStore(String line, DataStorage storage) {
         // Expected Format: PatientID, Timestamp, Label, Value
         String[] parts = line.split(",");

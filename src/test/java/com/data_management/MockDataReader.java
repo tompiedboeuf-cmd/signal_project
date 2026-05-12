@@ -11,4 +11,14 @@ public class MockDataReader implements DataReader {
         dataStorage.addPatientData(2, 150.0, "RedBloodCells", 1714376789052L);
     }
 
+    @Override
+    public void connect(String url) throws Exception {
+        // Mock reader does not require an actual connection.
+    }
+
+    @Override
+    public void disconnect() {
+        // Mock reader does not hold resources.
+    }
+
 }
