@@ -2,7 +2,6 @@ package com.alerts;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import com.data_management.DataStorage;
 import com.data_management.Patient;
@@ -17,10 +16,6 @@ import com.data_management.PatientRecord;
 public class AlertGenerator {
     private DataStorage dataStorage;
     private List<Alert> triggeredAlerts;
-
-    private final AlertFactory bloodPressureFactory = new BloodPressureAlertFactory();
-    private final AlertFactory bloodOxygenFactory = new BloodOxygenAlertFactory();
-    private final AlertFactory ecgFactory = new ECGAlertFactory();
 
     private final AlertStrategy bloodPressureStrategy = new BloodPressureStrategy();
     private final AlertStrategy oxygenSaturationStrategy = new OxygenSaturationStrategy();
@@ -79,16 +74,8 @@ public class AlertGenerator {
     }
 
     private void checkBloodPressure(Patient patient, List<PatientRecord> records) {
-        List<PatientRecord> systolic = filterByType(records, "SystolicPressure");
-        List<PatientRecord> diastolic = filterByType(records, "DiastolicPressure");
-
-        // 1. Critical Thresholds
-        checkThreshold(patient, systolic, 180, 90, "Systolic");
-        checkThreshold(patient, diastolic, 120, 60, "Diastolic");
-
-        // 2. Trend Alerts (3 consecutive readings changing by > 10mmHg)
-        evaluateTrend(patient, systolic, "Systolic");
-        evaluateTrend(patient, diastolic, "Diastolic");
+        List<Alert> alerts = bloodPressureStrategy.checkAlert(patient, records);
+        alerts.forEach(this::triggerAlert);
     }
 
     private void checkBloodSaturation(Patient patient, List<PatientRecord> records) {
@@ -107,30 +94,8 @@ public class AlertGenerator {
         alerts.forEach(this::triggerAlert);
     }
 
-    private void evaluateTrend(Patient patient, List<PatientRecord> readings, String type) {
-        for (int i = 2; i < readings.size(); i++) {
-            double v1 = readings.get(i - 2).getMeasurementValue();
-            double v2 = readings.get(i - 1).getMeasurementValue();
-            double v3 = readings.get(i).getMeasurementValue();
 
-            double diff1 = v2 - v1;
-            double diff2 = v3 - v2;
-
-            if (diff1 > 10 && diff2 > 10) {
-                triggerAlert(bloodPressureFactory.createAlert(
-                        String.valueOf(patient.getPatientId()),
-                        type + " Increasing Trend",
-                        readings.get(i).getTimestamp()));
-            } else if (diff1 < -10 && diff2 < -10) {
-                triggerAlert(bloodPressureFactory.createAlert(
-                        String.valueOf(patient.getPatientId()),
-                        type + " Decreasing Trend",
-                        readings.get(i).getTimestamp()));
-            }
-        }
-    }
-
-    /**
+/**
      * Triggers an alert for the monitoring system. This method can be extended to
      * notify medical staff, log the alert, or perform other actions. The method
      * currently assumes that the alert information is fully formed when passed as
@@ -144,27 +109,6 @@ public class AlertGenerator {
         System.out.println("ALERT TRIGGERED: " + alert.getCondition() +
                 " for Patient " + alert.getPatientId() +
                 " at " + alert.getTimestamp());
-    }
-
-    private List<PatientRecord> filterByType(List<PatientRecord> records, String type) {
-        return records.stream().filter(r -> r.getRecordType().equals(type)).collect(Collectors.toList());
-    }
-
-    private void checkThreshold(Patient patient, List<PatientRecord> readings, double max, double min, String type) {
-        for (PatientRecord record : readings) {
-            double value = record.getMeasurementValue();
-            if (value > max) {
-                triggerAlert(bloodPressureFactory.createAlert(
-                        String.valueOf(patient.getPatientId()),
-                        "Critical High " + type,
-                        record.getTimestamp()));
-            } else if (value < min) {
-                triggerAlert(bloodPressureFactory.createAlert(
-                        String.valueOf(patient.getPatientId()),
-                        "Critical Low " + type,
-                        record.getTimestamp()));
-            }
-        }
     }
 
     public List<Alert> getTriggeredAlerts() {

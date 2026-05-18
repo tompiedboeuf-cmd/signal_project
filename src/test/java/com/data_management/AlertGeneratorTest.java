@@ -257,4 +257,57 @@ public class AlertGeneratorTest {
         DataStorage instance2 = DataStorage.getInstance();
         assertSame(instance1, instance2);
     }
+
+    // ── STRATEGY PATTERN DIRECT TESTS ─────────
+
+    @Test
+    void testBloodPressureStrategyHighSystolic() {
+        BloodPressureStrategy strategy = new BloodPressureStrategy();
+        Patient p = new Patient(1);
+        p.addRecord(185.0, "SystolicPressure", 1000L);
+        List<Alert> alerts = strategy.checkAlert(p, p.getRecords(0, Long.MAX_VALUE));
+        assertTrue(alerts.stream().anyMatch(a -> a.getCondition().contains("Critical High Systolic")));
+    }
+
+    @Test
+    void testBloodPressureStrategyIncreasingTrend() {
+        BloodPressureStrategy strategy = new BloodPressureStrategy();
+        Patient p = new Patient(1);
+        p.addRecord(120.0, "SystolicPressure", 1000L);
+        p.addRecord(135.0, "SystolicPressure", 2000L);
+        p.addRecord(150.0, "SystolicPressure", 3000L);
+        List<Alert> alerts = strategy.checkAlert(p, p.getRecords(0, Long.MAX_VALUE));
+        assertTrue(alerts.stream().anyMatch(a -> a.getCondition().contains("Increasing Trend")));
+    }
+
+    @Test
+    void testOxygenSaturationStrategyLowSaturation() {
+        OxygenSaturationStrategy strategy = new OxygenSaturationStrategy();
+        Patient p = new Patient(1);
+        p.addRecord(90.0, "Saturation", 1000L);
+        List<Alert> alerts = strategy.checkAlert(p, p.getRecords(0, Long.MAX_VALUE));
+        assertTrue(alerts.stream().anyMatch(a -> a.getCondition().equals("Low Blood Saturation Alert")));
+    }
+
+    @Test
+    void testHeartRateStrategyECGPeak() {
+        HeartRateStrategy strategy = new HeartRateStrategy();
+        Patient p = new Patient(1);
+        for (int i = 0; i < 10; i++) {
+            p.addRecord(1.0, "ECG", 1000L + i * 100);
+        }
+        p.addRecord(10.0, "ECG", 2000L);
+        List<Alert> alerts = strategy.checkAlert(p, p.getRecords(0, Long.MAX_VALUE));
+        assertTrue(alerts.stream().anyMatch(a -> a.getCondition().equals("ECG Abnormal Peak Alert")));
+    }
+
+    @Test
+    void testHypotensiveHypoxemiaStrategyTriggered() {
+        HypotensiveHypoxemiaStrategy strategy = new HypotensiveHypoxemiaStrategy();
+        Patient p = new Patient(1);
+        p.addRecord(85.0, "SystolicPressure", 1000L);
+        p.addRecord(88.0, "Saturation", 1000L);
+        List<Alert> alerts = strategy.checkAlert(p, p.getRecords(0, Long.MAX_VALUE));
+        assertTrue(alerts.stream().anyMatch(a -> a.getCondition().equals("Hypotensive Hypoxemia Alert")));
+    }
 }

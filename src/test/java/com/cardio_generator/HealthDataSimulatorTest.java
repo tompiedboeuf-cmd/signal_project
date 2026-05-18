@@ -156,6 +156,13 @@ class HealthDataSimulatorTest {
         assertTrue(strategy instanceof ConsoleOutputStrategy);
     }
 
+    @Test
+    void testHealthDataSimulatorSingletonReturnsSameInstance() {
+        HealthDataSimulator instance1 = HealthDataSimulator.getInstance();
+        HealthDataSimulator instance2 = HealthDataSimulator.getInstance();
+        assertSame(instance1, instance2);
+    }
+
     private void resetSimulatorState() throws Exception {
         Field patientCountField = HealthDataSimulator.class.getDeclaredField("patientCount");
         patientCountField.setAccessible(true);
