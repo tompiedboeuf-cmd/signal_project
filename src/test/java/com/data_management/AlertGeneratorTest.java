@@ -1,6 +1,7 @@
 package com.data_management;
 
 import com.alerts.*;
+import com.cardio_generator.HealthDataSimulator;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -255,6 +256,13 @@ public class AlertGeneratorTest {
     void testDataStorageSingletonReturnsSameInstance() {
         DataStorage instance1 = DataStorage.getInstance();
         DataStorage instance2 = DataStorage.getInstance();
+        assertSame(instance1, instance2);
+    }
+
+    @Test
+    void testHealtDataSimulatorSingletonReturnsSameInstance() {
+        HealthDataSimulator instance1 = HealthDataSimulator.getInstance();
+        HealthDataSimulator instance2 = HealthDataSimulator.getInstance();
         assertSame(instance1, instance2);
     }
 
